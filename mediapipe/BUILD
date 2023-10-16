@@ -18,29 +18,6 @@ licenses(["notice"])  # Apache 2.0
 # @androidndk//:default_crosstool.
 
 config_setting(
-    name = "emscripten",
-    values = {"crosstool_top": "@emsdk//emscripten_toolchain:everything"},
-)
-
-config_setting(
-    name = "emscripten_wasm",
-    values = {
-        "crosstool_top": "@emsdk//emscripten_toolchain:everything",
-        "cpu": "wasm",
-    },
-)
-
-config_setting(
-    name = "emscripten_wasmsimd",
-    values = {
-        "crosstool_top": "@emsdk//emscripten_toolchain:everything",
-        "cpu": "wasm",
-        "copt": "-msimd128",
-    },
-)
-
-
-config_setting(
     name = "android",
     values = {"crosstool_top": "//external:android/crosstool"},
     visibility = ["//visibility:public"],
@@ -98,6 +75,7 @@ alias(
     actual = select({
         ":macos_i386": ":macos_i386",
         ":macos_x86_64": ":macos_x86_64",
+        ":macos_arm64": ":macos_arm64",
         "//conditions:default": ":macos_i386",  # Arbitrarily chosen from above.
     }),
     visibility = ["//visibility:public"],
@@ -142,6 +120,15 @@ config_setting(
     visibility = ["//visibility:public"],
 )
 
+config_setting(
+    name = "macos_arm64",
+    values = {
+        "apple_platform_type": "macos",
+        "cpu": "darwin_arm64",
+    },
+    visibility = ["//visibility:public"],
+)
+
 [
     config_setting(
         name = arch,
@@ -160,6 +147,28 @@ config_setting(
 config_setting(
     name = "windows",
     values = {"cpu": "x64_windows"},
+)
+
+config_setting(
+    name = "emscripten",
+    values = {"crosstool_top": "@emsdk//emscripten_toolchain:everything"},
+)
+
+config_setting(
+    name = "emscripten_wasm",
+    values = {
+        "crosstool_top": "@emsdk//emscripten_toolchain:everything",
+        "cpu": "wasm",
+    },
+)
+
+config_setting(
+    name = "emscripten_wasmsimd",
+    values = {
+        "crosstool_top": "@emsdk//emscripten_toolchain:everything",
+        "cpu": "wasm",
+        "copt": "-msimd128",
+    },
 )
 
 exports_files(

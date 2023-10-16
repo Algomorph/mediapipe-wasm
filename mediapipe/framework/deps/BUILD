@@ -15,7 +15,7 @@
 # Description:
 #   The dependencies of mediapipe.
 
-load("//mediapipe/framework/port:build_config.bzl", "mediapipe_cc_proto_library")
+load("//mediapipe/framework/port:build_config.bzl", "mediapipe_proto_library")
 load("@bazel_skylib//:bzl_library.bzl", "bzl_library")
 
 licenses(["notice"])
@@ -30,17 +30,21 @@ bzl_library(
     visibility = ["//mediapipe/framework:__subpackages__"],
 )
 
-proto_library(
-    name = "proto_descriptor_proto",
-    srcs = ["proto_descriptor.proto"],
+bzl_library(
+    name = "descriptor_set_bzl",
+    srcs = [
+        "descriptor_set.bzl",
+    ],
     visibility = ["//mediapipe/framework:__subpackages__"],
 )
 
-mediapipe_cc_proto_library(
-    name = "proto_descriptor_cc_proto",
+mediapipe_proto_library(
+    name = "proto_descriptor_proto",
     srcs = ["proto_descriptor.proto"],
-    visibility = ["//mediapipe/framework:__subpackages__"],
-    deps = [":proto_descriptor_proto"],
+    visibility = [
+        "//mediapipe/deps:__subpackages__",
+        "//mediapipe/framework:__subpackages__",
+    ],
 )
 
 cc_library(
@@ -79,10 +83,14 @@ cc_library(
     name = "message_matchers",
     testonly = True,
     hdrs = ["message_matchers.h"],
-    visibility = ["//visibility:public"],
+    # Use this library through "mediapipe/framework/port:gtest_main".
+    visibility = [
+        "//mediapipe/framework/port:__pkg__",
+        "//third_party/visionai/algorithms/tracking:__pkg__",
+    ],
     deps = [
         "//mediapipe/framework/port:core_proto",
-        "//mediapipe/framework/port:gtest_main",
+        "@com_google_googletest//:gtest",
     ],
 )
 
@@ -128,7 +136,6 @@ cc_library(
     hdrs = ["image_resizer.h"],
     visibility = ["//visibility:public"],
     deps = [
-        "//mediapipe/framework/port:integral_types",
         "//mediapipe/framework/port:opencv_imgproc",
     ],
 )
@@ -137,7 +144,7 @@ cc_library(
     name = "map_util",
     hdrs = ["map_util.h"],
     # Use this library through "mediapipe/framework/port:map_util".
-    visibility = ["//visibility:public"],
+    visibility = ["//mediapipe/framework/port:__pkg__"],
     deps = ["//mediapipe/framework/port:logging"],
 )
 
@@ -218,6 +225,7 @@ cc_library(
         "//mediapipe/framework/port:status",
         "//mediapipe/framework/port:statusor",
         "@com_google_absl//absl/base:core_headers",
+        "@com_google_absl//absl/container:flat_hash_map",
         "@com_google_absl//absl/container:flat_hash_set",
         "@com_google_absl//absl/meta:type_traits",
         "@com_google_absl//absl/strings",
@@ -281,7 +289,8 @@ cc_library(
     # Use this library through "mediapipe/framework/port:gtest_main".
     visibility = ["//mediapipe/framework/port:__pkg__"],
     deps = [
-        ":status",
+        "//mediapipe/framework/port:statusor",
+        "@com_google_absl//absl/status",
         "@com_google_googletest//:gtest",
     ],
 )

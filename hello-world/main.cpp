@@ -19,10 +19,10 @@ using namespace HelloWorld;
 
 
 
-// #define XSTR(x) STR(x)
-// #define STR(x) #x
+ #define XSTR(x) STR(x)
+ #define STR(x) #x
 
-// #pragma message("The value of MEDIAPIPE_OPENGL_ES_VERSION: " XSTR(MEDIAPIPE_OPENGL_ES_VERSION) ", MEDIAPIPE_OPENGL_ES_31: " XSTR(MEDIAPIPE_OPENGL_ES_31))
+ #pragma message("The value of MEDIAPIPE_OPENGL_ES_VERSION: " XSTR(MEDIAPIPE_OPENGL_ES_VERSION) ", MEDIAPIPE_OPENGL_ES_31: " XSTR(MEDIAPIPE_OPENGL_ES_31))
 
 // void func1(); 
 // void func2(); 

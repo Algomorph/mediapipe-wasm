@@ -13,25 +13,30 @@
 // limitations under the License.
 
 #include "mediapipe/java/com/google/mediapipe/framework/jni/packet_getter_jni.h"
-
+#include "json.hpp"
+#include "android/log.h"
+#include "absl/strings/str_cat.h"
 #include "mediapipe/framework/calculator.pb.h"
+#include "mediapipe/framework/formats/image.h"
 #include "mediapipe/framework/formats/image_frame.h"
 #include "mediapipe/framework/formats/matrix.h"
 #include "mediapipe/framework/formats/time_series_header.pb.h"
 #include "mediapipe/framework/formats/video_stream_header.h"
 #include "mediapipe/framework/port/core_proto_inc.h"
 #include "mediapipe/framework/port/proto_ns.h"
-#include "mediapipe/gpu/gpu_buffer.h"
 #include "mediapipe/java/com/google/mediapipe/framework/jni/colorspace.h"
 #include "mediapipe/java/com/google/mediapipe/framework/jni/graph.h"
 #include "mediapipe/java/com/google/mediapipe/framework/jni/jni_util.h"
 #if !MEDIAPIPE_DISABLE_GPU
 #include "mediapipe/gpu/gl_calculator_helper.h"
+#include "mediapipe/gpu/gpu_buffer.h"
 #endif  // !MEDIAPIPE_DISABLE_GPU
 
 namespace {
 using mediapipe::android::SerializedMessageIds;
 using mediapipe::android::ThrowIfError;
+using json = nlohmann::json;
+namespace mp = mediapipe; 
 
 template <typename T>
 const T& GetFromNativeHandle(int64_t packet_handle) {
@@ -184,8 +189,11 @@ JNIEXPORT jobjectArray JNICALL PACKET_GETTER_METHOD(nativeGetProtoVector)(
   }
   const std::vector<const ::mediapipe::proto_ns::MessageLite*>& proto_vector =
       get_proto_vector.value();
+  // TODO: move to register natives.
+  jclass byte_array_cls = env->FindClass("[B");
   jobjectArray proto_array =
-      env->NewObjectArray(proto_vector.size(), env->FindClass("[B"), nullptr);
+      env->NewObjectArray(proto_vector.size(), byte_array_cls, nullptr);
+  env->DeleteLocalRef(byte_array_cls);
   for (int i = 0; i < proto_vector.size(); ++i) {
     const ::mediapipe::proto_ns::MessageLite* proto_message = proto_vector[i];
 
@@ -253,6 +261,50 @@ JNIEXPORT jdoubleArray JNICALL PACKET_GETTER_METHOD(nativeGetFloat64Vector)(
   return result;
 }
 
+JNIEXPORT jobjectArray JNICALL PACKET_GETTER_METHOD(nativeGetRGBVector)(
+    JNIEnv* env, jobject thiz, jlong packet) {
+  const std::vector<std::vector<float>>& data =
+      GetFromNativeHandle<std::vector<std::vector<float>>>(packet);
+  jsize outerSize = data.size();
+  jobjectArray result = env->NewObjectArray(outerSize, env->FindClass("[F"), nullptr);
+  for (int i = 0; i < outerSize; ++i) {
+    const std::vector<float>& innerVec = data[i];
+    jsize innerSize = innerVec.size();
+
+    jfloatArray floatArray = env->NewFloatArray(innerSize);
+    env->SetFloatArrayRegion(floatArray, 0, innerSize, innerVec.data());
+
+    env->SetObjectArrayElement(result, i, floatArray);
+
+    env->DeleteLocalRef(floatArray);
+}
+
+
+  return result;
+}
+
+
+
+
+JNIEXPORT jstring JNICALL PACKET_GETTER_METHOD(nativeGetJSONPresage)(
+    JNIEnv* env, jobject thiz, jlong packet) {
+
+  json json_data = GetFromNativeHandle<json>(packet); 
+  // __android_log_print(ANDROID_LOG_DEBUG, "YourTag", "Made it thru json_data");
+
+  // Convert the JSON object to a string
+  std::string jsonString = json_data.dump();
+
+  // Create a jstring from the jsonString
+  jstring javaString = env->NewStringUTF(jsonString.c_str());
+  // __android_log_print(ANDROID_LOG_DEBUG, "YourTag", "Made it thru function");
+
+  return javaString;
+}
+
+
+
+
 JNIEXPORT jint JNICALL PACKET_GETTER_METHOD(nativeGetImageWidth)(JNIEnv* env,
                                                                  jobject thiz,
                                                                  jlong packet) {
@@ -295,34 +347,38 @@ JNIEXPORT jboolean JNICALL PACKET_GETTER_METHOD(nativeGetImageData)(
                : GetFromNativeHandle<mediapipe::ImageFrame>(packet);
 
   int64_t buffer_size = env->GetDirectBufferCapacity(byte_buffer);
+  void* buffer_data = env->GetDirectBufferAddress(byte_buffer);
+  if (buffer_data == nullptr || buffer_size < 0) {
+    ThrowIfError(env, absl::InvalidArgumentError(
+                          "input buffer does not support direct access"));
+    return false;
+  }
 
   // Assume byte buffer stores pixel data contiguously.
   const int expected_buffer_size = image.Width() * image.Height() *
                                    image.ByteDepth() * image.NumberOfChannels();
   if (buffer_size != expected_buffer_size) {
-    LOG(ERROR) << "Expected buffer size " << expected_buffer_size
-               << " got: " << buffer_size << ", width " << image.Width()
-               << ", height " << image.Height() << ", channels "
-               << image.NumberOfChannels();
+    ThrowIfError(
+        env, absl::InvalidArgumentError(absl::StrCat(
+                 "Expected buffer size ", expected_buffer_size,
+                 " got: ", buffer_size, ", width ", image.Width(), ", height ",
+                 image.Height(), ", channels ", image.NumberOfChannels())));
     return false;
   }
 
   switch (image.ByteDepth()) {
     case 1: {
-      uint8* data =
-          static_cast<uint8*>(env->GetDirectBufferAddress(byte_buffer));
+      uint8* data = static_cast<uint8*>(buffer_data);
       image.CopyToBuffer(data, expected_buffer_size);
       break;
     }
     case 2: {
-      uint16* data =
-          static_cast<uint16*>(env->GetDirectBufferAddress(byte_buffer));
+      uint16* data = static_cast<uint16*>(buffer_data);
       image.CopyToBuffer(data, expected_buffer_size);
       break;
     }
     case 4: {
-      float* data =
-          static_cast<float*>(env->GetDirectBufferAddress(byte_buffer));
+      float* data = static_cast<float*>(buffer_data);
       image.CopyToBuffer(data, expected_buffer_size);
       break;
     }
@@ -335,17 +391,31 @@ JNIEXPORT jboolean JNICALL PACKET_GETTER_METHOD(nativeGetImageData)(
 
 JNIEXPORT jboolean JNICALL PACKET_GETTER_METHOD(nativeGetRgbaFromRgb)(
     JNIEnv* env, jobject thiz, jlong packet, jobject byte_buffer) {
+  mediapipe::Packet mediapipe_packet =
+      mediapipe::android::Graph::GetPacketFromHandle(packet);
+  const bool is_image =
+      mediapipe_packet.ValidateAsType<mediapipe::Image>().ok();
   const mediapipe::ImageFrame& image =
-      GetFromNativeHandle<mediapipe::ImageFrame>(packet);
+      is_image ? *GetFromNativeHandle<mediapipe::Image>(packet)
+                      .GetImageFrameSharedPtr()
+                      .get()
+               : GetFromNativeHandle<mediapipe::ImageFrame>(packet);
   uint8_t* rgba_data =
       static_cast<uint8_t*>(env->GetDirectBufferAddress(byte_buffer));
   int64_t buffer_size = env->GetDirectBufferCapacity(byte_buffer);
+  if (rgba_data == nullptr || buffer_size < 0) {
+    ThrowIfError(env, absl::InvalidArgumentError(
+                          "input buffer does not support direct access"));
+    return false;
+  }
   if (buffer_size != image.Width() * image.Height() * 4) {
-    LOG(ERROR) << "Buffer size has to be width*height*4\n"
-               << "Image width: " << image.Width()
-               << ", Image height: " << image.Height()
-               << ", Buffer size: " << buffer_size << ", Buffer size needed: "
-               << image.Width() * image.Height() * 4;
+    ThrowIfError(env,
+                 absl::InvalidArgumentError(absl::StrCat(
+                     "Buffer size has to be width*height*4\n"
+                     "Image width: ",
+                     image.Width(), ", Image height: ", image.Height(),
+                     ", Buffer size: ", buffer_size, ", Buffer size needed: ",
+                     image.Width() * image.Height() * 4)));
     return false;
   }
   mediapipe::android::RgbToRgba(image.PixelData(), image.WidthStep(),
@@ -434,12 +504,12 @@ JNIEXPORT jint JNICALL PACKET_GETTER_METHOD(nativeGetGpuBufferName)(
   // gpu_buffer.name() returns a GLuint. Make sure the cast to jint is safe.
   static_assert(sizeof(GLuint) <= sizeof(jint),
                 "The cast to jint may truncate GLuint");
-  return static_cast<jint>(gpu_buffer.GetGlTextureBufferSharedPtr()->name());
+  return static_cast<jint>(
+      gpu_buffer.internal_storage<mediapipe::GlTextureBuffer>()->name());
 }
 
-JNIEXPORT jlong JNICALL PACKET_GETTER_METHOD(nativeGetGpuBuffer)(JNIEnv* env,
-                                                                 jobject thiz,
-                                                                 jlong packet) {
+JNIEXPORT jlong JNICALL PACKET_GETTER_METHOD(nativeGetGpuBuffer)(
+    JNIEnv* env, jobject thiz, jlong packet, jboolean wait_on_cpu) {
   mediapipe::Packet mediapipe_packet =
       mediapipe::android::Graph::GetPacketFromHandle(packet);
   mediapipe::GlTextureBufferSharedPtr ptr;
@@ -457,9 +527,11 @@ JNIEXPORT jlong JNICALL PACKET_GETTER_METHOD(nativeGetGpuBuffer)(JNIEnv* env,
   } else {
     const mediapipe::GpuBuffer& buffer =
         mediapipe_packet.Get<mediapipe::GpuBuffer>();
-    ptr = buffer.GetGlTextureBufferSharedPtr();
+    ptr = buffer.internal_storage<mediapipe::GlTextureBuffer>();
   }
-  ptr->WaitUntilComplete();
+  if (wait_on_cpu) {
+    ptr->WaitUntilComplete();
+  }
   return reinterpret_cast<intptr_t>(
       new mediapipe::GlTextureBufferSharedPtr(ptr));
 }

@@ -102,4 +102,5 @@ build:wasm --cpu=wasm
 build:wasm --host_crosstool_top=@bazel_tools//tools/cpp:toolchain
 # Disable sandbox environment because emsdk caches files by writing to
 # home directory.
+build:wasm --define='__EMSCRIPTEN__=1'
 build:wasm --spawn_strategy=local

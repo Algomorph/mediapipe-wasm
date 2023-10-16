@@ -27,35 +27,32 @@ WASM_LINKOPTS = [
 # notes
 # warning: Link with `-s LLD_REPORT_UNDEFINED` to get more information on undefined symbols
 
-
 cc_library(
     name = "canvas_renderer",
-    hdrs = ["renderer.h"],
     srcs = ["renderer.cc"],
+    hdrs = ["renderer.h"],
     deps = [
+        "//mediapipe/framework:calculator_framework",
+        "//mediapipe/framework/formats:image_frame",
         "//mediapipe/framework/port:logging",
         "//mediapipe/framework/port:parse_text_proto",
         "//mediapipe/framework/port:status",
-        "//mediapipe/gpu:gpu_buffer",
-        "//mediapipe/gpu:gpu_shared_data_internal",
         "//mediapipe/gpu:gl_calculator_helper",
-        "//mediapipe/gpu:image_frame_to_gpu_buffer_calculator",
-        "//mediapipe/framework:calculator_framework",
-        "//mediapipe/framework/formats:image_frame",
         "//mediapipe/gpu:gl_simple_calculator",
         "//mediapipe/gpu:gl_simple_shaders",
-    ]
+        "//mediapipe/gpu:gpu_buffer",
+        "//mediapipe/gpu:gpu_shared_data_internal",
+        "//mediapipe/gpu:image_frame_to_gpu_buffer_calculator",
+    ],
 )
-
 
 cc_binary(
     name = "hello-world-simple",
     srcs = [
         "main2.cpp",
-        # "renderer.h", 
+        # "renderer.h",
         # "renderer.cc"
     ],
-    
     linkopts = [
         "-s USE_PTHREADS=0",
         "-s ALLOW_MEMORY_GROWTH=1",
@@ -65,14 +62,13 @@ cc_binary(
         # "--no-entry",
         "-s ASSERTIONS=1",
         "--bind",
-        "-s STANDALONE_WASM=0", # generates only wasm file, not .js file? generates independent wasm, but missing utilities of js
+        "-s STANDALONE_WASM=0",  # generates only wasm file, not .js file? generates independent wasm, but missing utilities of js
         "--preload-file /home/pinku/work/src/github.com/prantoran/mediapipe/assets@assets",
         "--preload-file /home/pinku/work/src/github.com/prantoran/mediapipe/mediapipe/modules/face_detection/face_detection_short_range.tflite@mediapipe/modules/face_detection/face_detection_short_range.tflite",
         # "--preload-file /home/pinku/work/src/github.com/prantoran/mediapipe/mediapipe/@mediapipe/",
         "--preload-file /home/pinku/work/src/github.com/prantoran/mediapipe/mediapipe/modules/selfie_segmentation/selfie_segmentation.tflite@mediapipe/modules/selfie_segmentation/selfie_segmentation.tflite",
         "--preload-file /home/pinku/work/src/github.com/prantoran/mediapipe/mediapipe/modules/selfie_segmentation/selfie_segmentation_landscape.tflite@mediapipe/modules/selfie_segmentation/selfie_segmentation_landscape.tflite",
         "--preload-file /home/pinku/work/src/github.com/prantoran/mediapipe/mediapipe/modules/face_landmark/face_landmark.tflite@mediapipe/modules/face_landmark/face_landmark.tflite",
-
     ],
     visibility = ["//visibility:public"],
     deps = [
@@ -92,6 +88,7 @@ cc_binary(
         "//mediapipe/gpu:gpu_shared_data_internal",
         "//mediapipe/gpu:gl_calculator_helper",
         "//mediapipe/gpu:image_frame_to_gpu_buffer_calculator",
+        "//mediapipe/calculators/tensor:image_to_tensor_converter_gl_texture",
         "//mediapipe/gpu:gl_simple_calculator",
         "//mediapipe/gpu:gl_simple_shaders",
         "//mediapipe/modules/face_detection:face_detection_short_range_gpu",
@@ -112,7 +109,7 @@ cc_binary(
     linkopts = [
         "-s USE_PTHREADS=0",
         "-s ALLOW_MEMORY_GROWTH=0",
-        "-s ERROR_ON_UNDEFINED_SYMBOLS=1", 
+        "-s ERROR_ON_UNDEFINED_SYMBOLS=1",
         "-s USE_WEBGL2=1",
         "--export-all",
         "--no-entry",
@@ -162,7 +159,7 @@ cc_binary(
         # "//mediapipe/java/com/google/mediapipe/glutil", # ,,
         # "//mediapipe/java/com/google/mediapipe/framework:android_framework", # ,,
         # "//mediapipe/java/com/google/mediapipe/components:android_components", # ,,
-        # "//mediapipe/java/com/google/mediapipe/components:android_camerax_helper", # ,, 
+        # "//mediapipe/java/com/google/mediapipe/components:android_camerax_helper", # ,,
         # -------------- Android deps end --------------------
         "//hello-world/cpp:popen",
         "//hello-world/cpp:greet",
@@ -274,7 +271,7 @@ cc_binary(
         "@com_google_absl//absl/types:span",
         "//mediapipe/framework/formats:classification_cc_proto",
         "//mediapipe/util:resource_util",
-        "//mediapipe/calculators/tensor:tensors_to_classification_calculator", # android file err, added select emscripten_wasm for android file header dep
+        "//mediapipe/calculators/tensor:tensors_to_classification_calculator",  # android file err, added select emscripten_wasm for android file header dep
         "//mediapipe/calculators/tensor:image_to_tensor_converter_gl_texture",
         "//mediapipe/framework/formats:landmark_cc_proto",
         "//mediapipe/calculators/util:landmark_letterbox_removal_calculator",
@@ -293,10 +290,10 @@ cc_binary(
         "//mediapipe/modules/hand_landmark:hand_landmark_cpu",
         # "//mediapipe/util:annotation_renderer",  # uses cv:: many times, required by "//mediapipe/calculators/util:annotation_overlay_calculator"
         # "//mediapipe/calculators/util:annotation_overlay_calculator", #uses cv
-        "//mediapipe/graphs/hand_tracking/subgraphs:hand_renderer_cpu", # used select to exclude "//mediapipe/calculators/util:annotation_overlay_calculator" 
+        "//mediapipe/graphs/hand_tracking/subgraphs:hand_renderer_cpu",  # used select to exclude "//mediapipe/calculators/util:annotation_overlay_calculator"
         "//mediapipe/modules/hand_landmark:hand_landmark_tracking_cpu",
         "@com_google_googletest//:gtest",
-        "//mediapipe/graphs/hand_tracking/subgraphs:hand_renderer_gpu", # 1 dep uses cv ("//mediapipe/calculators/util:annotation_overlay_calculator"), excluded using select
+        "//mediapipe/graphs/hand_tracking/subgraphs:hand_renderer_gpu",  # 1 dep uses cv ("//mediapipe/calculators/util:annotation_overlay_calculator"), excluded using select
         "//mediapipe/modules/hand_landmark:hand_landmark_tracking_gpu",
         "//mediapipe/calculators/image:image_properties_calculator",
         "//mediapipe/calculators/util:association_norm_rect_calculator",

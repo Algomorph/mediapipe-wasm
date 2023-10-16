@@ -26,10 +26,382 @@ licenses(["notice"])
 
 package(default_visibility = ["//visibility:private"])
 
+exports_files(
+    glob(["testdata/image_to_tensor/*"]),
+    visibility = [
+        "//mediapipe/calculators/image:__subpackages__",
+        "//mediapipe/util:__subpackages__",
+    ],
+)
+
 selects.config_setting_group(
     name = "compute_shader_unavailable",
     match_any = [
         "//mediapipe/gpu:disable_gpu",
+    ],
+)
+
+mediapipe_proto_library(
+    name = "audio_to_tensor_calculator_proto",
+    srcs = ["audio_to_tensor_calculator.proto"],
+    visibility = [
+        "//mediapipe/framework:mediapipe_internal",
+    ],
+    deps = [
+        "//mediapipe/framework:calculator_options_proto",
+        "//mediapipe/framework:calculator_proto",
+    ],
+)
+
+cc_library(
+    name = "audio_to_tensor_calculator",
+    srcs = ["audio_to_tensor_calculator.cc"],
+    copts = select({
+        # b/215212850
+        "//mediapipe:apple": [
+            "-x objective-c++",
+            "-fobjc-arc",
+        ],
+        "//conditions:default": [],
+    }),
+    visibility = [
+        "//mediapipe/framework:mediapipe_internal",
+    ],
+    deps = [
+        ":audio_to_tensor_calculator_cc_proto",
+        "//mediapipe/framework:calculator_framework",
+        "//mediapipe/framework/api2:node",
+        "//mediapipe/framework/api2:packet",
+        "//mediapipe/framework/api2:port",
+        "//mediapipe/framework/formats:matrix",
+        "//mediapipe/framework/formats:tensor",
+        "//mediapipe/framework/formats:time_series_header_cc_proto",
+        "//mediapipe/framework/port:ret_check",
+        "//mediapipe/util:time_series_util",
+        "@com_google_absl//absl/memory",
+        "@com_google_absl//absl/status",
+        "@com_google_absl//absl/status:statusor",
+        "@com_google_absl//absl/strings:str_format",
+        "@com_google_audio_tools//audio/dsp:resampler_q",
+        "@com_google_audio_tools//audio/dsp:window_functions",
+        "@org_tensorflow//tensorflow/lite/c:common",
+        "@pffft",
+    ],
+    alwayslink = 1,
+)
+
+cc_test(
+    name = "audio_to_tensor_calculator_test",
+    srcs = ["audio_to_tensor_calculator_test.cc"],
+    deps = [
+        ":audio_to_tensor_calculator",
+        ":audio_to_tensor_calculator_cc_proto",
+        "//mediapipe/framework:calculator_cc_proto",
+        "//mediapipe/framework:calculator_framework",
+        "//mediapipe/framework:timestamp",
+        "//mediapipe/framework/api2:packet",
+        "//mediapipe/framework/formats:matrix",
+        "//mediapipe/framework/formats:tensor",
+        "//mediapipe/framework/port:gtest_main",
+        "//mediapipe/framework/port:parse_text_proto",
+        "@com_google_absl//absl/strings",
+        "@com_google_audio_tools//audio/dsp:resampler_q",
+        "@org_tensorflow//tensorflow/lite/c:common",
+    ],
+)
+
+mediapipe_proto_library(
+    name = "tensors_to_audio_calculator_proto",
+    srcs = ["tensors_to_audio_calculator.proto"],
+    visibility = [
+        "//mediapipe/framework:mediapipe_internal",
+    ],
+    deps = [
+        "//mediapipe/framework:calculator_options_proto",
+        "//mediapipe/framework:calculator_proto",
+    ],
+)
+
+cc_library(
+    name = "tensors_to_audio_calculator",
+    srcs = ["tensors_to_audio_calculator.cc"],
+    visibility = [
+        "//mediapipe/framework:mediapipe_internal",
+    ],
+    deps = [
+        ":tensors_to_audio_calculator_cc_proto",
+        "//mediapipe/framework:calculator_framework",
+        "//mediapipe/framework/api2:node",
+        "//mediapipe/framework/formats:matrix",
+        "//mediapipe/framework/formats:tensor",
+        "//mediapipe/framework/port:ret_check",
+        "@com_google_absl//absl/algorithm:container",
+        "@com_google_absl//absl/status",
+        "@com_google_audio_tools//audio/dsp:window_functions",
+        "@pffft",
+    ],
+    alwayslink = 1,
+)
+
+cc_test(
+    name = "tensors_to_audio_calculator_test",
+    srcs = ["tensors_to_audio_calculator_test.cc"],
+    deps = [
+        ":audio_to_tensor_calculator",
+        ":audio_to_tensor_calculator_cc_proto",
+        ":tensors_to_audio_calculator",
+        ":tensors_to_audio_calculator_cc_proto",
+        "//mediapipe/framework:calculator_framework",
+        "//mediapipe/framework/formats:matrix",
+        "//mediapipe/framework/port:gtest_main",
+        "//mediapipe/framework/port:parse_text_proto",
+        "@com_google_absl//absl/status",
+        "@com_google_absl//absl/strings",
+        "@com_google_audio_tools//audio/dsp:window_functions",
+    ],
+)
+
+mediapipe_proto_library(
+    name = "feedback_tensors_calculator_proto",
+    srcs = ["feedback_tensors_calculator.proto"],
+    visibility = [
+        "//mediapipe/framework:mediapipe_internal",
+    ],
+    deps = [
+        "//mediapipe/framework:calculator_options_proto",
+        "//mediapipe/framework:calculator_proto",
+    ],
+)
+
+cc_library(
+    name = "feedback_tensors_calculator",
+    srcs = ["feedback_tensors_calculator.cc"],
+    copts = select({
+        # b/215212850
+        "//mediapipe:apple": [
+            "-x objective-c++",
+            "-fobjc-arc",
+        ],
+        "//conditions:default": [],
+    }),
+    visibility = [
+        "//mediapipe/framework:mediapipe_internal",
+    ],
+    deps = [
+        ":feedback_tensors_calculator_cc_proto",
+        "//mediapipe/framework:calculator_framework",
+        "//mediapipe/framework/api2:node",
+        "//mediapipe/framework/formats:tensor",
+        "@com_google_absl//absl/status",
+    ],
+    alwayslink = 1,
+)
+
+cc_test(
+    name = "feedback_tensors_calculator_test",
+    srcs = ["feedback_tensors_calculator_test.cc"],
+    deps = [
+        ":feedback_tensors_calculator",
+        ":feedback_tensors_calculator_cc_proto",
+        "//mediapipe/framework:calculator_cc_proto",
+        "//mediapipe/framework:calculator_framework",
+        "//mediapipe/framework:timestamp",
+        "//mediapipe/framework/formats:tensor",
+        "//mediapipe/framework/port:gtest_main",
+        "//mediapipe/framework/port:parse_text_proto",
+        "@org_tensorflow//tensorflow/lite/c:common",
+    ],
+)
+
+mediapipe_proto_library(
+    name = "bert_preprocessor_calculator_proto",
+    srcs = ["bert_preprocessor_calculator.proto"],
+    visibility = [
+        "//mediapipe/framework:mediapipe_internal",
+    ],
+    deps = [
+        "//mediapipe/framework:calculator_options_proto",
+        "//mediapipe/framework:calculator_proto",
+    ],
+)
+
+cc_library(
+    name = "bert_preprocessor_calculator",
+    srcs = ["bert_preprocessor_calculator.cc"],
+    visibility = [
+        "//mediapipe/framework:mediapipe_internal",
+    ],
+    deps = [
+        ":bert_preprocessor_calculator_cc_proto",
+        "//mediapipe/framework:calculator_framework",
+        "//mediapipe/framework/api2:node",
+        "//mediapipe/framework/api2:port",
+        "//mediapipe/framework/formats:tensor",
+        "//mediapipe/framework/port:ret_check",
+        "//mediapipe/tasks/cc/core:utils",
+        "//mediapipe/tasks/cc/metadata:metadata_extractor",
+        "//mediapipe/tasks/cc/text/tokenizers:tokenizer",
+        "//mediapipe/tasks/cc/text/tokenizers:tokenizer_utils",
+        "//mediapipe/tasks/metadata:metadata_schema_cc",
+        "@com_google_absl//absl/container:flat_hash_set",
+        "@com_google_absl//absl/status",
+        "@com_google_absl//absl/status:statusor",
+        "@com_google_absl//absl/strings",
+    ],
+    alwayslink = 1,
+)
+
+cc_test(
+    name = "bert_preprocessor_calculator_test",
+    srcs = ["bert_preprocessor_calculator_test.cc"],
+    data = ["//mediapipe/tasks/testdata/text:bert_text_classifier_models"],
+    linkopts = ["-ldl"],
+    deps = [
+        ":bert_preprocessor_calculator",
+        "//mediapipe/framework:calculator_framework",
+        "//mediapipe/framework/formats:tensor",
+        "//mediapipe/framework/port:gtest_main",
+        "//mediapipe/framework/port:parse_text_proto",
+        "//mediapipe/tasks/cc/core:utils",
+        "//mediapipe/tasks/cc/metadata:metadata_extractor",
+        "@com_google_absl//absl/status",
+        "@com_google_absl//absl/status:statusor",
+        "@com_google_absl//absl/strings",
+        "@com_google_sentencepiece//src:sentencepiece_processor",
+    ],
+)
+
+mediapipe_proto_library(
+    name = "regex_preprocessor_calculator_proto",
+    srcs = ["regex_preprocessor_calculator.proto"],
+    visibility = [
+        "//mediapipe/framework:mediapipe_internal",
+    ],
+    deps = [
+        "//mediapipe/framework:calculator_options_proto",
+        "//mediapipe/framework:calculator_proto",
+    ],
+)
+
+cc_library(
+    name = "regex_preprocessor_calculator",
+    srcs = ["regex_preprocessor_calculator.cc"],
+    visibility = [
+        "//mediapipe/framework:mediapipe_internal",
+    ],
+    deps = [
+        ":regex_preprocessor_calculator_cc_proto",
+        "//mediapipe/framework:calculator_framework",
+        "//mediapipe/framework/api2:node",
+        "//mediapipe/framework/api2:port",
+        "//mediapipe/framework/formats:tensor",
+        "//mediapipe/framework/port:ret_check",
+        "//mediapipe/tasks/cc/metadata:metadata_extractor",
+        "//mediapipe/tasks/cc/text/tokenizers:regex_tokenizer",
+        "//mediapipe/tasks/cc/text/tokenizers:tokenizer_utils",
+        "//mediapipe/tasks/metadata:metadata_schema_cc",
+        "@com_google_absl//absl/status",
+        "@com_google_absl//absl/status:statusor",
+    ],
+    alwayslink = 1,
+)
+
+cc_test(
+    name = "regex_preprocessor_calculator_test",
+    srcs = ["regex_preprocessor_calculator_test.cc"],
+    data = ["//mediapipe/tasks/testdata/text:text_classifier_models"],
+    linkopts = ["-ldl"],
+    deps = [
+        ":regex_preprocessor_calculator",
+        "//mediapipe/framework:calculator_framework",
+        "//mediapipe/framework/formats:tensor",
+        "//mediapipe/framework/port:gtest_main",
+        "//mediapipe/framework/port:parse_text_proto",
+        "//mediapipe/framework/tool:sink",
+        "//mediapipe/tasks/cc/core:utils",
+        "//mediapipe/tasks/cc/metadata:metadata_extractor",
+        "@com_google_absl//absl/status",
+        "@com_google_absl//absl/status:statusor",
+        "@com_google_absl//absl/strings",
+        "@com_google_sentencepiece//src:sentencepiece_processor",
+    ],
+)
+
+cc_library(
+    name = "text_to_tensor_calculator",
+    srcs = ["text_to_tensor_calculator.cc"],
+    visibility = [
+        "//mediapipe/framework:mediapipe_internal",
+    ],
+    deps = [
+        "//mediapipe/framework:calculator_context",
+        "//mediapipe/framework:calculator_framework",
+        "//mediapipe/framework/api2:node",
+        "//mediapipe/framework/api2:port",
+        "//mediapipe/framework/formats:tensor",
+        "@com_google_absl//absl/status",
+        "@com_google_absl//absl/strings",
+    ],
+    alwayslink = 1,
+)
+
+cc_test(
+    name = "text_to_tensor_calculator_test",
+    srcs = ["text_to_tensor_calculator_test.cc"],
+    deps = [
+        ":text_to_tensor_calculator",
+        "//mediapipe/framework:calculator_framework",
+        "//mediapipe/framework:calculator_graph",
+        "//mediapipe/framework:packet",
+        "//mediapipe/framework/formats:tensor",
+        "//mediapipe/framework/port:gtest_main",
+        "//mediapipe/framework/port:parse_text_proto",
+        "//mediapipe/framework/tool:options_map",
+        "@com_google_absl//absl/status",
+        "@com_google_absl//absl/status:statusor",
+        "@com_google_absl//absl/strings",
+    ],
+)
+
+cc_library(
+    name = "universal_sentence_encoder_preprocessor_calculator",
+    srcs = ["universal_sentence_encoder_preprocessor_calculator.cc"],
+    visibility = [
+        "//mediapipe/framework:mediapipe_internal",
+    ],
+    deps = [
+        "//mediapipe/framework:calculator_context",
+        "//mediapipe/framework:calculator_framework",
+        "//mediapipe/framework/api2:node",
+        "//mediapipe/framework/api2:port",
+        "//mediapipe/framework/formats:tensor",
+        "//mediapipe/tasks/cc/core:utils",
+        "//mediapipe/tasks/cc/metadata:metadata_extractor",
+        "@com_google_absl//absl/container:flat_hash_set",
+        "@com_google_absl//absl/status",
+        "@com_google_absl//absl/strings",
+    ],
+    alwayslink = 1,
+)
+
+cc_test(
+    name = "universal_sentence_encoder_preprocessor_calculator_test",
+    srcs = ["universal_sentence_encoder_preprocessor_calculator_test.cc"],
+    data = ["//mediapipe/tasks/testdata/text:universal_sentence_encoder_qa"],
+    deps = [
+        ":universal_sentence_encoder_preprocessor_calculator",
+        "//mediapipe/framework:calculator_framework",
+        "//mediapipe/framework:packet",
+        "//mediapipe/framework/formats:tensor",
+        "//mediapipe/framework/port:gtest_main",
+        "//mediapipe/framework/port:parse_text_proto",
+        "//mediapipe/framework/port:status",
+        "//mediapipe/framework/tool:options_map",
+        "//mediapipe/tasks/cc/core:utils",
+        "//mediapipe/tasks/cc/metadata:metadata_extractor",
+        "@com_google_absl//absl/status",
+        "@com_google_absl//absl/status:statusor",
+        "@com_google_absl//absl/strings",
     ],
 )
 
@@ -43,6 +415,14 @@ mediapipe_proto_library(
     ],
 )
 
+# This target defines the "InferenceCalculator" component, which looks for the available concrete
+# implementations linked into the current binary and picks the one to use.
+# You can depend on :inference_calculator instead if you want to automatically include a default
+# set of implementations tailored for the current build configuration.
+# If you want to have precise control of which implementations to include (e.g. for strict binary
+# size concerns), depend on those implementations directly, and do not depend on
+# :inference_calculator.
+# In all cases, use "InferenceCalulator" in your graphs.
 cc_library(
     name = "inference_calculator_interface",
     srcs = ["inference_calculator.cc"],
@@ -55,40 +435,65 @@ cc_library(
         ],
         "//conditions:default": [],
     }),
+    visibility = ["//visibility:public"],
     deps = [
         ":inference_calculator_cc_proto",
+        ":inference_calculator_options_lib",
         "//mediapipe/framework:calculator_framework",
         "//mediapipe/framework/api2:node",
+        "//mediapipe/framework/api2:packet",
         "//mediapipe/framework/formats:tensor",
         "//mediapipe/framework/port:ret_check",
         "//mediapipe/framework/stream_handler:fixed_size_input_stream_handler",
         "//mediapipe/framework/tool:subgraph_expansion",
-        "//mediapipe/util/tflite:config",
         "//mediapipe/util/tflite:tflite_model_loader",
         "@com_google_absl//absl/memory",
         "@com_google_absl//absl/strings",
         "@org_tensorflow//tensorflow/lite:framework",
+        "@org_tensorflow//tensorflow/lite/core/api:op_resolver",
         "@org_tensorflow//tensorflow/lite/kernels:builtin_ops",
     ],
     alwayslink = 1,
-    visibility = ["//visibility:public"],
 )
 
 cc_library(
     name = "inference_calculator_gl",
     srcs = ["inference_calculator_gl.cc"],
     tags = ["nomac"],  # config problem with cpuinfo via TF
+    visibility = ["//visibility:public"],
     deps = [
-        "inference_calculator_interface",
+        ":inference_calculator_cc_proto",
+        ":inference_calculator_interface",
+        "//mediapipe/framework:calculator_context",
         "//mediapipe/gpu:gl_calculator_helper",
-        "//mediapipe/gpu:gpu_buffer",
-        "//mediapipe/util/tflite:tflite_gpu_runner",
+        "@com_google_absl//absl/memory",
+        "@com_google_absl//absl/status",
+        "@com_google_absl//absl/strings:str_format",
         "@org_tensorflow//tensorflow/lite/delegates/gpu:gl_delegate",
-        "@org_tensorflow//tensorflow/lite/delegates/gpu/common:shape",
-        "@org_tensorflow//tensorflow/lite/delegates/gpu/gl:gl_buffer",
-        "@org_tensorflow//tensorflow/lite/delegates/gpu/gl:gl_program",
-        "@org_tensorflow//tensorflow/lite/delegates/gpu/gl:gl_shader",
     ],
+    alwayslink = 1,
+)
+
+cc_library(
+    name = "inference_calculator_gl_advanced",
+    srcs = ["inference_calculator_gl_advanced.cc"],
+    tags = ["nomac"],
+    visibility = ["//visibility:public"],
+    deps = [
+        ":inference_calculator_interface",
+        "//mediapipe/framework/deps:file_path",
+        "//mediapipe/gpu:gl_calculator_helper",
+        "//mediapipe/util/tflite:tflite_gpu_runner",
+        "@com_google_absl//absl/memory",
+        "@com_google_absl//absl/status",
+        "@com_google_absl//absl/status:statusor",
+        "@org_tensorflow//tensorflow/lite:framework_stable",
+    ] + select({
+        "//conditions:default": [],
+        "//mediapipe:android": [
+            "//mediapipe/util/android/file/base",
+        ],
+    }),
     alwayslink = 1,
 )
 
@@ -104,6 +509,7 @@ cc_library(
         "-framework MetalKit",
     ],
     tags = ["ios"],
+    visibility = ["//visibility:public"],
     deps = [
         "inference_calculator_interface",
         "//mediapipe/gpu:MPPMetalHelper",
@@ -112,13 +518,61 @@ cc_library(
         "//mediapipe/objc:mediapipe_framework_ios",
         "//mediapipe/util/tflite:config",
         "@com_google_absl//absl/memory",
+        "@com_google_absl//absl/strings:str_format",
         "@org_tensorflow//tensorflow/lite/delegates/gpu:metal_delegate",
         "@org_tensorflow//tensorflow/lite/delegates/gpu:metal_delegate_internal",
         "@org_tensorflow//tensorflow/lite/delegates/gpu/common:shape",
         "@org_tensorflow//tensorflow/lite/delegates/gpu/metal:buffer_convert",
     ],
     alwayslink = 1,
+)
+
+cc_library(
+    name = "inference_runner",
+    hdrs = ["inference_runner.h"],
+    copts = select({
+        # TODO: fix tensor.h not to require this, if possible
+        "//mediapipe:apple": [
+            "-x objective-c++",
+            "-fobjc-arc",  # enable reference-counting
+        ],
+        "//conditions:default": [],
+    }),
     visibility = ["//visibility:public"],
+    deps = [
+        "//mediapipe/framework:calculator_context",
+        "//mediapipe/framework/formats:tensor",
+        "@com_google_absl//absl/status:statusor",
+    ],
+)
+
+cc_library(
+    name = "inference_interpreter_delegate_runner",
+    srcs = ["inference_interpreter_delegate_runner.cc"],
+    hdrs = ["inference_interpreter_delegate_runner.h"],
+    copts = select({
+        # TODO: fix tensor.h not to require this, if possible
+        "//mediapipe:apple": [
+            "-x objective-c++",
+            "-fobjc-arc",  # enable reference-counting
+        ],
+        "//conditions:default": [],
+    }),
+    visibility = ["//visibility:public"],
+    deps = [
+        ":inference_runner",
+        "//mediapipe/framework:mediapipe_profiling",
+        "//mediapipe/framework/api2:packet",
+        "//mediapipe/framework/formats:tensor",
+        "//mediapipe/framework/port:ret_check",
+        "//mediapipe/util/tflite:tflite_model_loader",
+        "@com_google_absl//absl/status",
+        "@com_google_absl//absl/status:statusor",
+        "@org_tensorflow//tensorflow/lite:framework_stable",
+        "@org_tensorflow//tensorflow/lite:string_util",
+        "@org_tensorflow//tensorflow/lite/c:c_api_types",
+        "@org_tensorflow//tensorflow/lite/core/api:op_resolver",
+    ],
 )
 
 cc_library(
@@ -134,37 +588,90 @@ cc_library(
         ],
         "//conditions:default": [],
     }),
+    visibility = ["//visibility:public"],
     deps = [
         ":inference_calculator_interface",
+        ":inference_calculator_utils",
+        ":inference_interpreter_delegate_runner",
+        ":inference_runner",
         "@com_google_absl//absl/memory",
+        "@com_google_absl//absl/status",
+        "@com_google_absl//absl/status:statusor",
+        "@org_tensorflow//tensorflow/lite:framework_stable",
+        "@org_tensorflow//tensorflow/lite/c:c_api_types",
         "@org_tensorflow//tensorflow/lite/delegates/xnnpack:xnnpack_delegate",
     ] + select({
-        "//conditions:default": [
-            "//mediapipe/util:cpu_util",
-        ],
-    }) + select({
         "//conditions:default": [],
         "//mediapipe:android": ["@org_tensorflow//tensorflow/lite/delegates/nnapi:nnapi_delegate"],
     }),
     alwayslink = 1,
+)
+
+cc_library(
+    name = "inference_calculator_utils",
+    srcs = ["inference_calculator_utils.cc"],
+    hdrs = ["inference_calculator_utils.h"],
+    deps = [
+        ":inference_calculator_cc_proto",
+        "//mediapipe/framework:port",
+    ] + select({
+        "//conditions:default": [
+            "//mediapipe/util:cpu_util",
+        ],
+    }),
+    alwayslink = 1,
+)
+
+cc_library(
+    name = "inference_calculator_xnnpack",
+    srcs = [
+        "inference_calculator_xnnpack.cc",
+    ],
+    copts = select({
+        # TODO: fix tensor.h not to require this, if possible
+        "//mediapipe:apple": [
+            "-x objective-c++",
+            "-fobjc-arc",  # enable reference-counting
+        ],
+        "//conditions:default": [],
+    }),
     visibility = ["//visibility:public"],
+    deps = [
+        ":inference_calculator_interface",
+        ":inference_calculator_utils",
+        ":inference_interpreter_delegate_runner",
+        ":inference_runner",
+        "@com_google_absl//absl/status",
+        "@com_google_absl//absl/status:statusor",
+        "@org_tensorflow//tensorflow/lite:framework_stable",
+        "@org_tensorflow//tensorflow/lite/delegates/xnnpack:xnnpack_delegate",
+    ],
+    alwayslink = 1,
 )
 
 cc_library(
     name = "inference_calculator_gl_if_compute_shader_available",
-    deps = select({
+    visibility = ["//visibility:public"],
+    deps = selects.with_or({
         ":compute_shader_unavailable": [],
         "//mediapipe:emscripten_wasm": [],
-        "//conditions:default": [":inference_calculator_gl"],
+        "//conditions:default": [
+            ":inference_calculator_gl",
+            ":inference_calculator_gl_advanced",
+        ],
     }),
 )
 
+# This target provides the InferenceCalculator and a default set of implementations tailored for the
+# current build platforms. More implementations can be added as separate dependencies to a client;
+# for clients that want a narrower set of implementations than the default should see the comment on
+# inference_calculator_interface.
 cc_library(
     name = "inference_calculator",
     visibility = ["//visibility:public"],
     deps = [
-        ":inference_calculator_interface",
         ":inference_calculator_cpu",
+        ":inference_calculator_interface",
     ] + select({
         "//conditions:default": [":inference_calculator_gl_if_compute_shader_available"],
         "//mediapipe:ios": [":inference_calculator_metal"],
@@ -204,11 +711,11 @@ cc_library(
     deps = [
         ":tensor_converter_calculator_cc_proto",
         "//mediapipe/framework:calculator_framework",
+        "//mediapipe/framework:port",
         "//mediapipe/framework/formats:image_frame",
         "//mediapipe/framework/formats:matrix",
         "//mediapipe/framework/formats:tensor",
         "//mediapipe/framework/port:ret_check",
-        "//mediapipe/framework:port",
         "//mediapipe/util:resource_util",
     ] + select({
         "//mediapipe/gpu:disable_gpu": [],
@@ -225,16 +732,16 @@ cc_library(
             "//mediapipe/gpu:gpu_buffer",
         ],
         "//mediapipe:ios": [
-            "//mediapipe/gpu:MPPMetalUtil",
             "//mediapipe/gpu:MPPMetalHelper",
+            "//mediapipe/gpu:MPPMetalUtil",
             "//mediapipe/objc:mediapipe_framework_ios",
         ],
         "//mediapipe:macos": [],
         "//conditions:default": [
             "//mediapipe/gpu:gl_calculator_helper",
             "//mediapipe/gpu:gl_simple_shaders",
-            "//mediapipe/gpu:shader_util",
             "//mediapipe/gpu:gpu_buffer",
+            "//mediapipe/gpu:shader_util",
         ],
     }),
 )
@@ -291,18 +798,18 @@ cc_library(
     visibility = ["//visibility:public"],
     deps = [
         ":tensors_to_detections_calculator_cc_proto",
-        "//mediapipe/framework/formats:detection_cc_proto",
-        "@com_google_absl//absl/strings:str_format",
-        "@com_google_absl//absl/types:span",
-        "//mediapipe/framework/api2:node",
         "//mediapipe/framework:calculator_framework",
         "//mediapipe/framework:port",
+        "//mediapipe/framework/api2:node",
         "//mediapipe/framework/deps:file_path",
+        "//mediapipe/framework/formats:detection_cc_proto",
         "//mediapipe/framework/formats:location",
         "//mediapipe/framework/formats:tensor",
         "//mediapipe/framework/formats/object_detection:anchor_cc_proto",
         "//mediapipe/framework/port:ret_check",
-    ] + select({
+        "@com_google_absl//absl/strings:str_format",
+        "@com_google_absl//absl/types:span",
+    ] + selects.with_or({
         ":compute_shader_unavailable": [],
         "//conditions:default": [":tensors_to_detections_calculator_gpu_deps"],
     }),
@@ -313,8 +820,8 @@ cc_library(
     name = "tensors_to_detections_calculator_gpu_deps",
     deps = select({
         "//mediapipe:ios": [
-            "//mediapipe/gpu:MPPMetalUtil",
             "//mediapipe/gpu:MPPMetalHelper",
+            "//mediapipe/gpu:MPPMetalUtil",
         ],
         "//mediapipe:macos": [],
         "//conditions:default": [
@@ -353,6 +860,57 @@ cc_library(
         "//mediapipe/framework/port:ret_check",
     ],
     alwayslink = 1,
+)
+
+mediapipe_proto_library(
+    name = "landmarks_to_tensor_calculator_proto",
+    srcs = ["landmarks_to_tensor_calculator.proto"],
+    visibility = ["//visibility:public"],
+    deps = [
+        "//mediapipe/framework:calculator_options_proto",
+        "//mediapipe/framework:calculator_proto",
+    ],
+)
+
+cc_library(
+    name = "landmarks_to_tensor_calculator",
+    srcs = ["landmarks_to_tensor_calculator.cc"],
+    hdrs = ["landmarks_to_tensor_calculator.h"],
+    copts = select({
+        "//mediapipe:apple": [
+            "-x objective-c++",
+            "-fobjc-arc",  # enable reference-counting
+        ],
+        "//conditions:default": [],
+    }),
+    visibility = ["//visibility:public"],
+    deps = [
+        ":landmarks_to_tensor_calculator_cc_proto",
+        "//mediapipe/framework:calculator_framework",
+        "//mediapipe/framework/api2:node",
+        "//mediapipe/framework/formats:landmark_cc_proto",
+        "//mediapipe/framework/formats:tensor",
+        "//mediapipe/framework/port:ret_check",
+    ],
+    alwayslink = 1,
+)
+
+cc_test(
+    name = "landmarks_to_tensor_calculator_test",
+    srcs = ["landmarks_to_tensor_calculator_test.cc"],
+    deps = [
+        ":landmarks_to_tensor_calculator",
+        ":landmarks_to_tensor_calculator_cc_proto",
+        "//mediapipe/framework:calculator_cc_proto",
+        "//mediapipe/framework:calculator_framework",
+        "//mediapipe/framework:calculator_runner",
+        "//mediapipe/framework/formats:landmark_cc_proto",
+        "//mediapipe/framework/formats:tensor",
+        "//mediapipe/framework/port:gtest_main",
+        "//mediapipe/framework/port:parse_text_proto",
+        "@com_google_absl//absl/memory",
+        "@com_google_googletest//:gtest_main",
+    ],
 )
 
 mediapipe_proto_library(
@@ -416,20 +974,19 @@ cc_library(
     visibility = ["//visibility:public"],
     deps = [
         ":tensors_to_classification_calculator_cc_proto",
+        "//mediapipe/framework:calculator_framework",
+        "//mediapipe/framework/api2:node",
+        "//mediapipe/framework/formats:classification_cc_proto",
+        "//mediapipe/framework/formats:location",
+        "//mediapipe/framework/formats:tensor",
+        "//mediapipe/framework/port:ret_check",
+        "//mediapipe/util:label_map_cc_proto",
+        "//mediapipe/util:resource_util",
         "@com_google_absl//absl/container:node_hash_map",
         "@com_google_absl//absl/strings:str_format",
         "@com_google_absl//absl/types:span",
-        "//mediapipe/framework/api2:node",
-        "//mediapipe/framework/formats:classification_cc_proto",
-        "//mediapipe/framework:calculator_framework",
-        "//mediapipe/framework/port:ret_check",
-        "//mediapipe/framework/formats:tensor",
-        "//mediapipe/util:resource_util",
     ] + select({
         "//mediapipe:android": [
-            "//mediapipe/util/android/file/base",
-        ],
-        "//mediapipe:emscripten_wasm": [
             "//mediapipe/util/android/file/base",
         ],
         "//mediapipe:ios": [
@@ -438,11 +995,6 @@ cc_library(
         "//conditions:default": [
             "//mediapipe/framework/port:file_helpers",
         ],
-    }) + select({
-        "//conditions:default": [
-            "//mediapipe/framework/formats:location", # uses cv
-        ],
-        "//mediapipe:emscripten_wasm": []
     }),
     alwayslink = 1,
 )
@@ -454,6 +1006,7 @@ mediapipe_proto_library(
     deps = [
         "//mediapipe/framework:calculator_options_proto",
         "//mediapipe/framework:calculator_proto",
+        "//mediapipe/util:label_map_proto",
     ],
 )
 
@@ -492,6 +1045,9 @@ cc_library(
         ":image_to_tensor_calculator_cc_proto",
         ":image_to_tensor_converter",
         ":image_to_tensor_utils",
+        ":loose_headers",
+        "//mediapipe/framework:calculator_framework",
+        "//mediapipe/framework:port",
         "//mediapipe/framework/api2:node",
         "//mediapipe/framework/formats:image",
         "//mediapipe/framework/formats:image_frame",
@@ -500,18 +1056,11 @@ cc_library(
         "//mediapipe/framework/port:ret_check",
         "//mediapipe/framework/port:status",
         "//mediapipe/framework/port:statusor",
-        "//mediapipe/framework:calculator_framework",
-        "//mediapipe/framework:port",
         "//mediapipe/gpu:gpu_origin_cc_proto",
     ] + select({
         "//mediapipe/gpu:disable_gpu": [],
-        "//mediapipe:emscripten_wasm": [
-            ":image_to_tensor_calculator_gpu_deps",
-            ":image_to_tensor_converter_gl_texture"
-        ],
         "//conditions:default": [":image_to_tensor_calculator_gpu_deps"],
     }) + select({
-        "//mediapipe:emscripten_wasm": [],
         "//mediapipe/framework/port:disable_opencv": [],
         "//conditions:default": [":image_to_tensor_converter_opencv"],
     }),
@@ -520,14 +1069,9 @@ cc_library(
 
 cc_library(
     name = "image_to_tensor_calculator_gpu_deps",
-    deps = select({
+    deps = selects.with_or({
         "//mediapipe:android": [
             ":image_to_tensor_converter_gl_buffer",
-            "//mediapipe/gpu:gl_calculator_helper",
-            "//mediapipe/gpu:gpu_buffer",
-        ],
-        "//mediapipe:emscripten_wasm": [
-            # ":image_to_tensor_converter_gl_buffer",
             "//mediapipe/gpu:gl_calculator_helper",
             "//mediapipe/gpu:gpu_buffer",
         ],
@@ -543,7 +1087,6 @@ cc_library(
             "//mediapipe/gpu:gpu_buffer",
         ],
     }),
-    visibility = ["//visibility:public"],
 )
 
 mediapipe_proto_library(
@@ -595,6 +1138,7 @@ cc_test(
         "//mediapipe/framework/port:opencv_imgcodecs",
         "//mediapipe/framework/port:opencv_imgproc",
         "//mediapipe/framework/port:parse_text_proto",
+        "//mediapipe/util:image_test_utils",
         "@com_google_absl//absl/flags:flag",
         "@com_google_absl//absl/memory",
         "@com_google_absl//absl/strings",
@@ -651,7 +1195,7 @@ cc_library(
     name = "image_to_tensor_converter_gl_buffer",
     srcs = ["image_to_tensor_converter_gl_buffer.cc"],
     hdrs = ["image_to_tensor_converter_gl_buffer.h"],
-    deps = ["//mediapipe/framework:port"] + select({
+    deps = ["//mediapipe/framework:port"] + selects.with_or({
         "//mediapipe:apple": [],
         "//conditions:default": [
             ":image_to_tensor_converter",
@@ -684,25 +1228,25 @@ cc_library(
     name = "image_to_tensor_converter_gl_texture",
     srcs = ["image_to_tensor_converter_gl_texture.cc"],
     hdrs = ["image_to_tensor_converter_gl_texture.h"],
+    visibility = ["//visibility:public"],
     deps = ["//mediapipe/framework:port"] + select({
         "//mediapipe/gpu:disable_gpu": [],
         "//conditions:default": [
             ":image_to_tensor_converter",
             ":image_to_tensor_converter_gl_utils",
             ":image_to_tensor_utils",
-            "@com_google_absl//absl/strings",
             "//mediapipe/framework:calculator_framework",
+            "//mediapipe/framework/formats:image",
             "//mediapipe/framework/formats:tensor",
             "//mediapipe/framework/port:ret_check",
             "//mediapipe/framework/port:status",
             "//mediapipe/framework/port:statusor",
             "//mediapipe/gpu:gl_calculator_helper",
             "//mediapipe/gpu:gl_simple_shaders",
-            "//mediapipe/framework/formats:image",
             "//mediapipe/gpu:shader_util",
+            "@com_google_absl//absl/strings",
         ],
     }),
-    visibility = ["//visibility:public"],
 )
 
 cc_library(
@@ -712,10 +1256,10 @@ cc_library(
     deps = ["//mediapipe/framework:port"] + select({
         "//mediapipe/gpu:disable_gpu": [],
         "//conditions:default": [
-            "//mediapipe/gpu:gl_base",
-            "//mediapipe/gpu:gl_context",
             "//mediapipe/framework/port:status",
             "//mediapipe/framework/port:statusor",
+            "//mediapipe/gpu:gl_base",
+            "//mediapipe/gpu:gl_context",
         ],
     }),
 )
@@ -742,16 +1286,15 @@ cc_library(
         "//mediapipe:apple": [
             ":image_to_tensor_converter",
             ":image_to_tensor_utils",
-            "//mediapipe/gpu:MPPMetalHelper",
-            "@com_google_absl//absl/strings",
             "//mediapipe/framework:calculator_framework",
-            "//mediapipe/framework/formats:rect_cc_proto",
+            "//mediapipe/framework/formats:image",
             "//mediapipe/framework/formats:tensor",
             "//mediapipe/framework/port:ret_check",
             "//mediapipe/framework/port:status",
             "//mediapipe/framework/port:statusor",
-            "//mediapipe/framework/formats:image",
+            "//mediapipe/gpu:MPPMetalHelper",
             "//mediapipe/gpu:gpu_buffer_format",
+            "@com_google_absl//absl/strings",
             "@org_tensorflow//tensorflow/lite/delegates/gpu/common:shape",
             "@org_tensorflow//tensorflow/lite/delegates/gpu/common:types",
         ],
@@ -763,22 +1306,42 @@ cc_library(
     name = "image_to_tensor_utils",
     srcs = ["image_to_tensor_utils.cc"],
     hdrs = ["image_to_tensor_utils.h"],
+    copts = select({
+        "//mediapipe:apple": [
+            "-x objective-c++",
+            "-fobjc-arc",  # enable reference-counting
+        ],
+        "//conditions:default": [],
+    }),
     visibility = ["//visibility:public"],
     deps = [
+        ":image_to_tensor_calculator_cc_proto",
+        "//mediapipe/framework/api2:packet",
+        "//mediapipe/framework/api2:port",
+        "//mediapipe/framework/formats:image",
         "//mediapipe/framework/formats:rect_cc_proto",
+        "//mediapipe/framework/formats:tensor",
         "//mediapipe/framework/port:ret_check",
         "//mediapipe/framework/port:statusor",
+        "//mediapipe/gpu:gpu_origin_cc_proto",
+        "@com_google_absl//absl/status",
         "@com_google_absl//absl/types:optional",
-    ],
+    ] + select({
+        "//mediapipe/gpu:disable_gpu": [],
+        "//conditions:default": ["//mediapipe/gpu:gpu_buffer"],
+    }),
 )
 
 cc_test(
     name = "image_to_tensor_utils_test",
     srcs = ["image_to_tensor_utils_test.cc"],
     deps = [
+        ":image_to_tensor_calculator_cc_proto",
         ":image_to_tensor_utils",
         "//mediapipe/framework/formats:rect_cc_proto",
         "//mediapipe/framework/port:gtest_main",
+        "//mediapipe/framework/port:parse_text_proto",
+        "//mediapipe/framework/port:status",
     ],
 )
 
@@ -814,20 +1377,20 @@ cc_library(
     visibility = ["//visibility:public"],
     deps = [
         ":tensors_to_segmentation_calculator_cc_proto",
-        "@com_google_absl//absl/strings:str_format",
-        "@com_google_absl//absl/strings",
-        "@com_google_absl//absl/types:span",
+        "//mediapipe/framework:calculator_context",
+        "//mediapipe/framework:calculator_framework",
+        "//mediapipe/framework:port",
         "//mediapipe/framework/formats:image",
         "//mediapipe/framework/formats:image_frame",
         "//mediapipe/framework/formats:tensor",
         "//mediapipe/framework/port:ret_check",
-        "//mediapipe/framework:calculator_context",
-        "//mediapipe/framework:calculator_framework",
-        "//mediapipe/framework:port",
-        "//mediapipe/util:resource_util",
-        "@org_tensorflow//tensorflow/lite:framework",
-        "//mediapipe/gpu:gpu_origin_cc_proto",
         "//mediapipe/framework/port:statusor",
+        "//mediapipe/gpu:gpu_origin_cc_proto",
+        "//mediapipe/util:resource_util",
+        "@com_google_absl//absl/strings",
+        "@com_google_absl//absl/strings:str_format",
+        "@com_google_absl//absl/types:span",
+        "@org_tensorflow//tensorflow/lite:framework",
     ] + selects.with_or({
         "//mediapipe/gpu:disable_gpu": [],
         "//conditions:default": [
@@ -849,12 +1412,67 @@ cc_library(
             "@org_tensorflow//tensorflow/lite/delegates/gpu/gl:gl_texture",
             "@org_tensorflow//tensorflow/lite/delegates/gpu/gl/converters:util",
         ],
-    }) + selects.with_or({
-        "//mediapipe:emscripten_wasm": [],
+    }) + select({
+        "//mediapipe/framework/port:disable_opencv": [],
         "//conditions:default": [
             "//mediapipe/framework/formats:image_opencv",
             "//mediapipe/framework/port:opencv_imgproc",
         ],
     }),
     alwayslink = 1,
+)
+
+cc_library(
+    name = "tensors_dequantization_calculator",
+    srcs = ["tensors_dequantization_calculator.cc"],
+    copts = select({
+        "//mediapipe:apple": [
+            "-x objective-c++",
+            "-fobjc-arc",  # enable reference-counting
+        ],
+        "//conditions:default": [],
+    }),
+    visibility = ["//visibility:public"],
+    deps = [
+        "//mediapipe/framework:calculator_context",
+        "//mediapipe/framework:calculator_framework",
+        "//mediapipe/framework/api2:node",
+        "//mediapipe/framework/api2:port",
+        "//mediapipe/framework/formats:tensor",
+        "//mediapipe/framework/port:ret_check",
+        "@com_google_absl//absl/status",
+        "@com_google_absl//absl/strings",
+    ],
+    alwayslink = 1,
+)
+
+# For a more maintainable build this target should not exist and the headers
+# should  be split into the existing cc_library targets, but this change was
+# automatically  done so that we can remove long standing issues and complexity
+# in the build system. It's up to the OWNERS of this package to get rid of it or
+# not. The use of the textual_hdrs attribute is discouraged, use hdrs instead.
+# Here it is used to avoid header parsing errors in packages where the feature
+# parse_headers was enabled since loose headers were not being parsed.
+cc_library(
+    name = "loose_headers",
+    tags = ["avoid_dep"],
+    textual_hdrs = [
+        "image_to_tensor_converter_gl_buffer.h",
+        "image_to_tensor_converter_gl_texture.h",
+    ],
+    visibility = [":__pkg__"],
+)
+
+cc_test(
+    name = "tensors_dequantization_calculator_test",
+    srcs = ["tensors_dequantization_calculator_test.cc"],
+    deps = [
+        ":tensors_dequantization_calculator",
+        "//mediapipe/framework:calculator_framework",
+        "//mediapipe/framework:calculator_runner",
+        "//mediapipe/framework/formats:tensor",
+        "//mediapipe/framework/port:gtest_main",
+        "//mediapipe/framework/port:parse_text_proto",
+        "@com_google_absl//absl/status",
+    ],
 )

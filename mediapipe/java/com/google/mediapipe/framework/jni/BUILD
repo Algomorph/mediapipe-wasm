@@ -51,6 +51,7 @@ cc_library(
     }),
     hdrs = [
         "colorspace.h",
+	"json.hpp",
         "compat_jni.h",
         "graph.h",
         "graph_jni.h",
@@ -84,12 +85,11 @@ cc_library(
     deps = [
         ":class_registry",
         ":jni_util",
-        "//mediapipe/framework:calculator_framework",
-        "//mediapipe/framework:calculator_profile_cc_proto",
-        "//mediapipe/framework/tool:calculator_graph_template_cc_proto",
         "//mediapipe/framework/formats:image_format_cc_proto",
-        "//mediapipe/framework/formats:matrix_data_cc_proto",
         "//mediapipe/framework/formats:time_series_header_cc_proto",
+        "//mediapipe/framework:calculator_cc_proto",
+        "//mediapipe/framework:calculator_profile_cc_proto",
+        "//mediapipe/framework:calculator_framework",
         "@com_google_absl//absl/strings",
         "@com_google_absl//absl/strings:str_format",
         "@com_google_absl//absl/synchronization",
@@ -123,6 +123,7 @@ cc_library(
             "//mediapipe/gpu:gpu_buffer",
             "//mediapipe/gpu:gpu_shared_data_internal",
             "//mediapipe/gpu:graph_support",
+            "//mediapipe/gpu:egl_surface_holder",
         ],
         "//mediapipe/gpu:disable_gpu": [
             "//mediapipe/gpu:gpu_shared_data_internal",
@@ -170,6 +171,7 @@ cc_library(
     hdrs = ["register_natives.h"],
     deps = [
         ":class_registry",
+        ":loose_headers",
         ":mediapipe_framework_jni",
         "@com_google_absl//absl/strings",
         "@com_google_absl//absl/strings:str_format",
@@ -181,4 +183,21 @@ cc_library(
         "//mediapipe:android": [
         ],
     }),
+)
+
+# For a more maintainable build this target should not exist and the headers
+# should  be split into the existing cc_library targets, but this change was
+# automatically  done so that we can remove long standing issues and complexity
+# in the build system. It's up to the OWNERS of this package to get rid of it or
+# not. The use of the textual_hdrs attribute is discouraged, use hdrs instead.
+# Here it is used to avoid header parsing errors in packages where the feature
+# parse_headers was enabled since loose headers were not being parsed.
+cc_library(
+    name = "loose_headers",
+    tags = ["avoid_dep"],
+    textual_hdrs = [
+        "android_asset_util_jni.h",
+        "android_packet_creator_jni.h",
+    ],
+    visibility = [":__pkg__"],
 )

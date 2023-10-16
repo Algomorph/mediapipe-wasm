@@ -197,7 +197,6 @@ cc_library(
         ":spectrogram_calculator_cc_proto",
         "//mediapipe/framework:calculator_framework",
         "//mediapipe/framework/formats:matrix",
-        "//mediapipe/framework/formats:time_series_header_cc_proto",
         "//mediapipe/framework/port:core_proto",
         "//mediapipe/framework/port:integral_types",
         "//mediapipe/framework/port:logging",
@@ -244,6 +243,7 @@ cc_test(
         "//mediapipe/framework/formats:time_series_header_cc_proto",
         "//mediapipe/framework/port:gtest_main",
         "//mediapipe/framework/port:parse_text_proto",
+        "//mediapipe/framework/tool:test_util",
         "@com_google_absl//absl/flags:flag",
     ],
 )
@@ -276,6 +276,7 @@ cc_test(
         "//mediapipe/framework/port:gtest_main",
         "//mediapipe/framework/port:status",
         "//mediapipe/util:time_series_test_util",
+        "@com_google_audio_tools//audio/dsp/mfcc",
         "@eigen_archive//:eigen3",
     ],
 )
@@ -351,6 +352,8 @@ cc_test(
         "//mediapipe/framework/port:status",
         "//mediapipe/framework/tool:validate_type",
         "//mediapipe/util:time_series_test_util",
+        "@com_google_audio_tools//audio/dsp:resampler",
+        "@com_google_audio_tools//audio/dsp:resampler_q",
         "@com_google_audio_tools//audio/dsp:signal_vector_util",
         "@eigen_archive//:eigen3",
     ],

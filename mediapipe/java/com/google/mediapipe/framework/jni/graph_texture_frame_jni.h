@@ -26,9 +26,12 @@ extern "C" {
 
 // Releases a native mediapipe::GpuBuffer.
 JNIEXPORT void JNICALL GRAPH_TEXTURE_FRAME_METHOD(nativeReleaseBuffer)(
-    JNIEnv* env, jobject thiz, jlong nativeHandle);
+    JNIEnv* env, jobject thiz, jlong nativeHandle, jlong consumerSyncToken);
 
 JNIEXPORT jint JNICALL GRAPH_TEXTURE_FRAME_METHOD(nativeGetTextureName)(
+    JNIEnv* env, jobject thiz, jlong nativeHandle);
+
+JNIEXPORT void JNICALL GRAPH_TEXTURE_FRAME_METHOD(nativeGpuWait)(
     JNIEnv* env, jobject thiz, jlong nativeHandle);
 
 JNIEXPORT jint JNICALL GRAPH_TEXTURE_FRAME_METHOD(nativeGetWidth)(
@@ -36,6 +39,10 @@ JNIEXPORT jint JNICALL GRAPH_TEXTURE_FRAME_METHOD(nativeGetWidth)(
 
 JNIEXPORT jint JNICALL GRAPH_TEXTURE_FRAME_METHOD(nativeGetHeight)(
     JNIEnv* env, jobject thiz, jlong nativeHandle);
+
+JNIEXPORT jlong JNICALL GRAPH_TEXTURE_FRAME_METHOD(
+    nativeCreateSyncTokenForCurrentExternalContext)(JNIEnv* env, jobject thiz,
+                                                    jlong nativeHandle);
 
 #ifdef __cplusplus
 }  // extern "C"

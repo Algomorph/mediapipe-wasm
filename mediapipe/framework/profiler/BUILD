@@ -56,7 +56,6 @@ alias(
     actual = select({
         "//conditions:default": ":graph_profiler_default_on",
     }),
-    visibility = ["//visibility:public"],
 )
 
 alias(
@@ -90,9 +89,11 @@ cc_library(
 cc_library(
     name = "graph_profiler_real",
     srcs = [
-        "gl_context_profiler.cc",
         "graph_profiler.cc",
-    ],
+    ] + select({
+        "//conditions:default": ["gl_context_profiler.cc"],
+        "//mediapipe/gpu:disable_gpu": [],
+    }),
     hdrs = [
         "graph_profiler.h",
     ],
@@ -101,30 +102,38 @@ cc_library(
     ],
     visibility = ["//visibility:private"],
     deps = [
-        ":graph_tracer",
         ":profiler_resource_util",
-        ":sharded_map",
+        ":graph_tracer",
         ":trace_buffer",
+        ":sharded_map",
         "//mediapipe/framework:calculator_cc_proto",
-        "//mediapipe/framework:calculator_context",
         "//mediapipe/framework:calculator_profile_cc_proto",
-        "//mediapipe/framework:executor",
-        "//mediapipe/framework:validated_graph_config",
-        "//mediapipe/framework/deps:clock",
-        "//mediapipe/framework/port:advanced_proto_lite",
+        "//mediapipe/framework/port:file_helpers",
         "//mediapipe/framework/port:integral_types",
-        "//mediapipe/framework/port:logging",
-        "//mediapipe/framework/port:ret_check",
-        "//mediapipe/framework/port:status",
-        "//mediapipe/framework/tool:name_util",
-        "//mediapipe/framework/tool:tag_map",
-        "//mediapipe/framework/tool:validate_name",
         "@com_google_absl//absl/memory",
+        "@com_google_absl//absl/types:optional",
         "@com_google_absl//absl/strings",
         "@com_google_absl//absl/synchronization",
         "@com_google_absl//absl/time",
-        "@com_google_absl//absl/types:optional",
-    ],
+        "//mediapipe/framework/deps:clock",
+        "//mediapipe/framework:calculator_context",
+        "//mediapipe/framework:executor",
+        "//mediapipe/framework:validated_graph_config",
+        "//mediapipe/framework/tool:tag_map",
+        "//mediapipe/framework/tool:validate_name",
+        "//mediapipe/framework/port:logging",
+        "//mediapipe/framework/port:re2",
+        "//mediapipe/framework/port:ret_check",
+        "//mediapipe/framework/port:status",
+        "//mediapipe/framework/port:advanced_proto_lite",
+        "//mediapipe/framework/tool:name_util",
+    ] + select({
+        "//conditions:default": [],
+    }) + select({
+        "//conditions:default": [
+        ],
+        "//mediapipe/gpu:disable_gpu": [],
+    }),
 )
 
 cc_library(
@@ -187,6 +196,7 @@ cc_library(
         "//mediapipe/framework:timestamp",
         "//mediapipe/framework/port:integral_types",
         "@com_google_absl//absl/container:node_hash_map",
+        "@com_google_absl//absl/synchronization",
         "@com_google_absl//absl/time",
     ],
 )
@@ -234,7 +244,6 @@ cc_test(
         "//mediapipe/framework:calculator_profile_cc_proto",
         "//mediapipe/framework:test_calculators",
         "//mediapipe/framework/deps:clock",
-        "//mediapipe/framework/deps:message_matchers",
         "//mediapipe/framework/port:advanced_proto",
         "//mediapipe/framework/port:file_helpers",
         "//mediapipe/framework/port:gtest_main",
@@ -271,6 +280,7 @@ cc_library(
     name = "profiler_resource_util",
     srcs = ["profiler_resource_util_common.cc"] + select({
         "//conditions:default": ["profiler_resource_util.cc"],
+        "//mediapipe/framework:android_no_jni": ["profiler_resource_util_android_hal.cc"],
         "//mediapipe:android": ["profiler_resource_util_android.cc"],
         "//mediapipe:ios": ["profiler_resource_util_ios.cc"],
     }),
@@ -296,6 +306,9 @@ cc_library(
         "//conditions:default": [
             "//mediapipe/framework/port:file_helpers",
         ],
+        "//mediapipe/framework:android_no_jni": [
+            "//mediapipe/framework/port:file_helpers",
+        ],
         "//mediapipe:android": [
             "//mediapipe/java/com/google/mediapipe/framework/jni:jni_util",
             "//mediapipe/framework/port:file_helpers",
@@ -304,6 +317,27 @@ cc_library(
             "//mediapipe/framework/port:file_helpers",
         ],
     }),
+)
+
+# For a more maintainable build this target should not exist and the headers
+# should  be split into the existing cc_library targets, but this change was
+# automatically  done so that we can remove long standing issues and complexity
+# in the build system. It's up to the OWNERS of this package to get rid of it or
+# not. The use of the textual_hdrs attribute is discouraged, use hdrs instead.
+# Here it is used to avoid header parsing errors in packages where the feature
+# parse_headers was enabled since loose headers were not being parsed.
+cc_library(
+    name = "loose_headers",
+    tags = ["avoid_dep"],
+    textual_hdrs = [
+        "graph_profiler.h",
+        "graph_profiler_stub.h",
+    ],
+    visibility = ["//mediapipe/framework:__pkg__"],
+    deps = [
+        "//mediapipe/framework:calculator_cc_proto",
+        "//mediapipe/framework:calculator_profile_cc_proto",
+    ],
 )
 
 cc_test(
